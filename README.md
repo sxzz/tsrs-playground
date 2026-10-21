@@ -1,6 +1,6 @@
 # tsrs Playground
 
-[Open the playground](https://tsrs-playground.sxzz.workers.dev/)
+[Open the playground](https://tsrs.sxzz.dev/)
 
 A browser playground for [tsrs](https://github.com/oxc-project/tsrs), the Rust port of the TypeScript compiler, inspired by its [official playground](https://github.com/oxc-project/tsrs/tree/main/playground).
 
@@ -28,9 +28,7 @@ To preview the Cloudflare deployment locally, run `pnpm build && pnpm exec wrang
 
 ## WebAssembly
 
-The browser entry point and WASM from [`@tsrs/wasm`](https://npmx.dev/package/@tsrs/wasm) load at runtime through jsDelivr. npm metadata resolves the selected tag to an exact version before loading `https://cdn.jsdelivr.net/npm/@tsrs/wasm@<version>/browser.js` and its adjacent `tsrs.wasm`.
-
-Compiler loading and compilation run in a single Web Worker using the package's `tsc()` API and an in-memory file system. Standard TypeScript libraries are included in the WASM package; imported dependencies must be supplied as playground files. The package caches each version’s compiled WASM module, and failures can be retried. No local Rust or WASM build is required.
+[`@tsrs/wasm`](https://npmx.dev/package/@tsrs/wasm) loads from jsDelivr and compiles your code locally in a Web Worker. No local Rust or WASM build is required.
 
 ## Sponsors
 
@@ -42,4 +40,4 @@ Compiler loading and compilation run in a single Web Worker using the package's 
 
 ## License
 
-[MIT](./LICENSE) License © 2025 [Kevin Deng](https://github.com/sxzz)
+[MIT](./LICENSE) License © 2025–2026 [Kevin Deng](https://github.com/sxzz)

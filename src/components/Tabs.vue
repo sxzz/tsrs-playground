@@ -19,9 +19,7 @@ const emit = defineEmits<{
   reorderTab: [from: number, to: number]
 }>()
 
-const active = defineModel<string>({
-  default: (props) => (props.tabs as string[])[0]!,
-})
+const active = defineModel<string>({ default: '' })
 
 watch(
   [active, () => tabs],
@@ -30,7 +28,7 @@ watch(
       active.value = tabs[0]!
     }
   },
-  { deep: true },
+  { deep: true, immediate: true },
 )
 
 const accentVar = computed(() =>

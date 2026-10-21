@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import {
   cmd,
   compiling,
+  error,
   loadingDebounced,
   outputFiles,
   timeCost,
@@ -10,10 +11,13 @@ import {
 
 const busy = computed(() => loadingDebounced.value || compiling.value)
 
-const hasStderr = computed(() => !!outputFiles.value['<stderr>']?.trim())
+const hasStderr = computed(
+  () => !!error.value || !!outputFiles.value['<stderr>']?.trim(),
+)
 
 const status = computed(() => {
   if (loadingDebounced.value) return 'downloading compiler'
+  if (error.value) return 'compiler unavailable'
   if (compiling.value) return 'compiling'
   if (timeCost.value) return `${Math.round(timeCost.value)} ms`
   return ''
@@ -21,12 +25,12 @@ const status = computed(() => {
 </script>
 
 <template>
-  <!-- One shell line: the prompt, the flags you type, and what tsgo reported. -->
+  <!-- One shell line: the prompt, the flags you type, and what tsrs reported. -->
   <div class="rail" :class="busy && 'is-running'">
     <span class="prompt" aria-hidden="true">❯</span>
-    <label class="bin" for="tsgo-flags">tsgo</label>
+    <label class="bin" for="tsrs-flags">tsrs</label>
     <input
-      id="tsgo-flags"
+      id="tsrs-flags"
       v-model="cmd"
       class="flags"
       type="text"
@@ -41,7 +45,7 @@ const status = computed(() => {
         v-if="status"
         class="dot"
         :class="hasStderr && !busy && 'dot-alert'"
-        :title="hasStderr && !busy ? 'tsgo wrote to stderr' : undefined"
+        :title="hasStderr && !busy ? 'tsrs wrote to stderr' : undefined"
       />
       <span class="readout-text">{{ status }}</span>
     </output>
@@ -55,12 +59,12 @@ const status = computed(() => {
 }
 
 .rail:focus-within {
-  border-bottom-color: var(--c-go);
-  box-shadow: 0 1px 0 var(--c-go);
+  border-bottom-color: var(--c-rs);
+  box-shadow: 0 1px 0 var(--c-rs);
 }
 
 .prompt {
-  --at-apply: 'shrink-0 text-base text-go font-700 leading-none';
+  --at-apply: 'shrink-0 text-base text-rs font-700 leading-none';
 }
 
 .bin {
@@ -84,7 +88,7 @@ const status = computed(() => {
 }
 
 .dot {
-  --at-apply: 'size-1.5 shrink-0 rounded-full bg-go';
+  --at-apply: 'size-1.5 shrink-0 rounded-full bg-rs';
 }
 
 .dot-alert {
@@ -95,14 +99,14 @@ const status = computed(() => {
   animation: pulse 1.15s ease-in-out infinite;
 }
 
-/* A single cyan hairline crossing the rail while tsgo runs. */
+/* A single cyan hairline crossing the rail while tsrs runs. */
 .rail::after {
   content: '';
   --at-apply: 'pointer-events-none absolute bottom-[-1px] left-0 h-px w-[35%] op0';
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(var(--c-go-rgb)),
+    rgb(var(--c-rs-rgb)),
     transparent
   );
 }

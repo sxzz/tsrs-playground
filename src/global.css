@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------
  * Palette. Two accents, each with a job:
  *   --c-ts  TypeScript blue — everything you wrote (source tabs, source panel)
- *   --c-go  Go cyan         — everything tsgo did (prompt, output tabs, timing)
+ *   --c-rs  Compiler cyan   — everything tsrs did (prompt, output tabs, timing)
  * ------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
@@ -17,8 +17,8 @@
   --c-ink-3: #8695a5;
 
   --c-ts: #2f6fbe;
-  --c-go: #0089ac;
-  --c-go-rgb: 0 137 172;
+  --c-rs: #0089ac;
+  --c-rs-rgb: 0 137 172;
   --c-alert: #cb2b3a;
   --c-ok: #0f8a57;
   --c-heart: #ec4899;
@@ -46,8 +46,8 @@ html.dark {
   --c-ink-3: #5e6c7b;
 
   --c-ts: #63a4ea;
-  --c-go: #2fc6e8;
-  --c-go-rgb: 47 198 232;
+  --c-rs: #2fc6e8;
+  --c-rs-rgb: 47 198 232;
   --c-alert: #ff7a85;
   --c-ok: #3dd68c;
 
@@ -77,12 +77,12 @@ body {
 
 /* Every interactive surface gets a visible ring. Outlines follow border-radius. */
 :where(a, button, select, input, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--c-go);
+  outline: 2px solid var(--c-rs);
   outline-offset: 2px;
 }
 
 ::selection {
-  background-color: rgb(var(--c-go-rgb) / 22%);
+  background-color: rgb(var(--c-rs-rgb) / 22%);
 }
 
 /* Thin scrollbars on our own surfaces only — Monaco manages its own. */

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import * as monaco from 'monaco-editor'
 import { dark } from '../composables/dark'
-import { cmd, defaultFiles, files } from '../composables/state'
+import { activeFile, cmd, defaultFiles, files } from '../composables/state'
 import VersionPicker from './VersionPicker.vue'
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
@@ -18,11 +17,9 @@ function reset() {
       'Reset every file and the command line back to their defaults?',
     )
   ) {
-    monaco.editor.getModels().forEach((model) => {
-      if (model.uri.authority === 'model') return
-      model.dispose()
-    })
+    for (const file of files.value.values()) file.dispose()
     files.value = defaultFiles()
+    activeFile.value = 'main.ts'
     cmd.value = ''
   }
 }
@@ -35,12 +32,12 @@ function reset() {
       <h1 class="wordmark-text">
         <a
           class="wordmark-brand"
-          href="https://github.com/microsoft/TypeScript"
+          href="https://github.com/oxc-project/tsrs"
           target="_blank"
           rel="noopener"
-          title="microsoft/TypeScript"
+          title="oxc-project/tsrs"
         >
-          <span text-ts>TypeScript</span> <span text-go>Go</span>
+          <span text-rs>tsrs</span>
         </a>
         <span class="wordmark-kind"> Playground</span>
       </h1>
@@ -79,7 +76,7 @@ function reset() {
       <a
         bar-button
         title="Source on GitHub"
-        href="https://github.com/sxzz/typescript-go-playground"
+        href="https://github.com/sxzz/tsrs-playground"
         target="_blank"
         rel="noopener"
       >

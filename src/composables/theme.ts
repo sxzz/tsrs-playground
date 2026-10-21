@@ -42,8 +42,8 @@ function surface(c: typeof LIGHT): monaco.editor.IColors {
   }
 }
 
-export const THEME_LIGHT = 'tsgo-light'
-export const THEME_DARK = 'tsgo-dark'
+export const THEME_LIGHT = 'tsrs-light'
+export const THEME_DARK = 'tsrs-dark'
 
 export function defineEditorThemes(): void {
   monaco.editor.defineTheme(THEME_LIGHT, {

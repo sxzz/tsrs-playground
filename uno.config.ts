@@ -22,7 +22,7 @@ export default defineConfig({
         3: 'var(--c-ink-3)',
       },
       ts: 'var(--c-ts)',
-      go: 'var(--c-go)',
+      rs: 'var(--c-rs)',
       alert: 'var(--c-alert)',
       ok: 'var(--c-ok)',
       heart: '#ec4899',

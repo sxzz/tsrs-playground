@@ -8,8 +8,8 @@ const {
 } = defineProps<{
   tabs: string[]
   readonly?: boolean
-  /** Which side of the compiler this panel shows: your source, or tsgo's output. */
-  accent?: 'ts' | 'go'
+  /** Which side of the compiler this panel shows: your source, or tsrs's output. */
+  accent?: 'ts' | 'rs'
 }>()
 
 const emit = defineEmits<{
@@ -34,7 +34,7 @@ watch(
 )
 
 const accentVar = computed(() =>
-  accent === 'go' ? 'var(--c-go)' : 'var(--c-ts)',
+  accent === 'rs' ? 'var(--c-rs)' : 'var(--c-ts)',
 )
 
 /** stderr keeps the alert color whether or not it is the tab you're on. */

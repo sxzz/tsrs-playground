@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [Vue(), UnoCSS()],
+  worker: { format: 'es' },
   build: {
     rolldownOptions: {
       output: {

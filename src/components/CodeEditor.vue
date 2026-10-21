@@ -1,82 +1,47 @@
 <script lang="ts" setup>
-import { computedWithControl } from '@vueuse/core'
 import * as monaco from 'monaco-editor'
-import { computed, markRaw, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  useTemplateRef,
+  watch,
+} from 'vue'
 import { getSharedMonacoOptions } from '../composables/editor'
-import Loading from './Loading.vue'
 
 const modelValue = defineModel<string>({ default: '' })
-const props = withDefaults(
-  defineProps<{
-    language?: string
-    options?: monaco.editor.IStandaloneEditorConstructionOptions
-    model?: monaco.editor.ITextModel
-    readonly?: boolean
-  }>(),
-  {
-    language: () => 'plaintext',
-    options: () => ({}),
-  },
-)
-
-const isLoading = ref(true)
-const editorRef = shallowRef<monaco.editor.IStandaloneCodeEditor>()
+const props = defineProps<{ model: monaco.editor.ITextModel }>()
 const editorElement = useTemplateRef<HTMLDivElement>('editorElement')
-
-let editor: monaco.editor.IStandaloneCodeEditor
+let editor: monaco.editor.IStandaloneCodeEditor | undefined
 
 const options = computed(() => ({
   ...getSharedMonacoOptions(),
   fontSize: 13,
   fontLigatures: true,
-  readOnly: props.readonly,
-  ...props.options,
 }))
 watch(options, () => editor?.updateOptions(options.value))
 
-watch(modelValue, () => {
-  if (model.value.getValue() !== modelValue.value) {
-    model.value.setValue(modelValue.value)
-  }
+watch(modelValue, (value) => {
+  if (props.model.getValue() !== value) props.model.setValue(value)
 })
-
-const model = computedWithControl(
-  () => [props.model, props.language],
-  () => {
-    return (
-      props.model ||
-      markRaw(monaco.editor.createModel(modelValue.value, props.language))
-    )
-  },
+watch(
+  () => props.model,
+  (model) => editor?.setModel(model),
 )
-watch(model, () => {
-  editor?.setModel(model.value)
-  modelValue.value = model.value.getValue()
-})
 
-watch(editorElement, (newValue, oldValue) => {
-  if (!newValue || oldValue) return
-
-  editor = monaco.editor.create(newValue, options.value)
-  editorRef.value = editor
-  editor.layout()
-  editor.setModel(model.value)
-  editor.onDidChangeModelContent(() => {
-    modelValue.value = editor.getValue()
+onMounted(() => {
+  editor = monaco.editor.create(editorElement.value!, {
+    ...options.value,
+    model: props.model,
   })
-  isLoading.value = false
+  editor.onDidChangeModelContent(() => {
+    modelValue.value = editor!.getValue()
+  })
 })
 
-defineExpose({
-  /**
-   * Monaco editor instance
-   */
-  $editor: editorRef,
-})
+onBeforeUnmount(() => editor?.dispose())
 </script>
 
 <template>
-  <div ref="editorElement">
-    <Loading v-if="isLoading" />
-  </div>
+  <div ref="editorElement" />
 </template>

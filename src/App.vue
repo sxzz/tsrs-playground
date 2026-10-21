@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useClipboard, watchDebounced } from '@vueuse/core'
 import AnsiRegex from 'ansi-regex'
-import { computed, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import AppBar from './components/AppBar.vue'
 import CodeEditor from './components/CodeEditor.vue'
 import CommandBar from './components/CommandBar.vue'
@@ -13,11 +13,13 @@ import { useSourceFile } from './composables/source-file'
 import {
   activeFile,
   cmd,
+  compileError,
   compiling,
   currentManifest,
+  error,
+  fetchManifest,
   files,
   filesToObject,
-  initted,
   isFetchingManifest,
   loadingDebounced,
   loadingWasm,
@@ -26,110 +28,88 @@ import {
   serialized,
   tabs,
   timeCost,
-  watchMode,
 } from './composables/state'
-import {
-  createTsgoCli,
-  getWorker,
-  loadWasm,
-  releaseWorker,
-  terminateWorkers,
-  wasmModCache,
-} from './core'
+import { createCompiler } from './core'
 
 const ansiRegex = AnsiRegex()
+const compiler = createCompiler()
+let running = false
+let pending = false
+let disposed = false
 
-/** Only the newest run owns `compiling`; superseded runs must not clear it. */
-let runId = 0
+watchDebounced([files, cmd], () => compile(), { debounce: 50, deep: true })
+watch(currentManifest, () => compile(), { immediate: true })
 
-watchDebounced([files, cmd, watchMode], () => compile(), {
-  debounce: 200,
-  deep: true,
-  immediate: true,
+onBeforeUnmount(() => {
+  disposed = true
+  compiler.dispose()
 })
-watch(isFetchingManifest, () => compile())
 
 async function compile() {
-  if (loadingWasm.value || !currentManifest.value || isFetchingManifest.value)
-    return
-
-  if (watchMode.value && compiling.value) {
-    return
+  if (disposed) return
+  pending = true
+  if (running) return
+  running = true
+  try {
+    // Read the latest editor state only when the worker is ready for it.
+    while (pending && !disposed) {
+      pending = false
+      await compileLatest()
+    }
+  } finally {
+    running = false
   }
+}
+
+async function compileLatest() {
+  compileError.value = ''
+  timeCost.value = 0
+  const manifest = currentManifest.value
+  if (!manifest || isFetchingManifest.value) return
 
   const current = serialized.value
-  const currentVersion: string = currentManifest.value.version
-
-  let wasmMod = wasmModCache[currentVersion]
-  if (!wasmMod) {
-    loadingWasm.value = true
-    try {
-      wasmMod = await loadWasm(currentManifest.value)
-    } finally {
-      // This has to come down on every path. compile() refuses to start while
-      // loadingWasm is set, so leaking it on a stale return or a failed
-      // download leaves the playground unable to compile ever again.
-      loadingWasm.value = false
-      initted.value = true
-    }
-  }
-
-  if (current !== serialized.value) {
-    // Edits landed while the compiler was downloading, and the guard above
-    // turned them away. Nothing else will retry them, so retry here.
-    return compile()
-  }
-
-  const id = ++runId
-  compiling.value = true
-
-  terminateWorkers()
-
-  const worker = getWorker()
-  const cli = createTsgoCli(worker, (files) => {
-    outputFiles.value = files
-  })
-
-  if (watchMode.value) {
-    const stop = watch(
-      files,
-      () => cli.setSourceCode(Object.fromEntries(filesToObject())),
-      { deep: true },
-    )
-
-    await cli
-      .watch(wasmMod, cmd.value, Object.fromEntries(filesToObject()))
-      .finally(() => {
-        releaseWorker(worker, cli)
-        stop()
-      })
-    return
-  }
-
+  const isCurrent = () =>
+    !disposed &&
+    current === serialized.value &&
+    manifest === currentManifest.value
+  loadingWasm.value = true
   try {
-    const result = await cli.compile(
-      wasmMod,
+    await compiler.load(manifest.version)
+    if (!isCurrent()) return
+    loadingWasm.value = false
+    compiling.value = true
+    const result = await compiler.compile(
+      manifest.version,
       cmd.value,
       Object.fromEntries(filesToObject()),
     )
-    if (current !== serialized.value) return
-
+    if (!isCurrent()) return
     outputFiles.value = result.output
     timeCost.value = result.time
-    outputActive.value = Object.keys(result.output)[0]
+    if (!outputActive.value || !(outputActive.value in result.output)) {
+      outputActive.value = Object.keys(result.output)[0]
+    }
   } catch (error) {
-    // A newer edit terminated this worker mid-run; its result is stale anyway.
-    if (id === runId) throw error
+    if (isCurrent()) {
+      compileError.value =
+        error instanceof Error ? error.message : String(error)
+      outputFiles.value = {}
+    }
   } finally {
-    releaseWorker(worker, cli)
-    if (id === runId) compiling.value = false
+    loadingWasm.value = false
+    compiling.value = false
   }
+}
+
+function retry() {
+  if (!currentManifest.value) return fetchManifest()
+  return compile()
 }
 
 const outputTabs = computed(() => Object.keys(outputFiles.value))
 const hasOutput = computed(() => outputTabs.value.length > 0)
 
-function highlight(code?: string | null) {
+function highlight(code?: string) {
   if (!code) return ''
   return shiki.codeToHtml(code.replace(ansiRegex, ''), {
     lang: 'js',
@@ -199,7 +179,6 @@ function updateCode(name: string, code: string) {
             <CodeEditor
               :model-value="files.get(value)!.code"
               :model="files.get(value)!.model"
-              :uri="files.get(value)!.uri"
               h-full
               min-h-0
               w-full
@@ -209,7 +188,7 @@ function updateCode(name: string, code: string) {
         </template>
       </Tabs>
 
-      <Tabs v-model="outputActive" :tabs="outputTabs" readonly accent="go">
+      <Tabs v-model="outputActive" :tabs="outputTabs" readonly accent="rs">
         <template #head-end>
           <button
             v-if="hasOutput"
@@ -227,24 +206,31 @@ function updateCode(name: string, code: string) {
         </template>
 
         <div class="pane">
-          <div v-if="loadingDebounced" class="pane-state">
-            <div i-ri:download-cloud-2-line animate-pulse text-2xl text-go />
-            <p class="pane-state-title">Downloading the tsgo compiler</p>
+          <div v-if="error" class="pane-state" role="alert">
+            <p class="pane-state-title">Unable to run tsrs</p>
+            <p class="pane-state-note">{{ error }}</p>
+            <button type="button" class="retry" @click="retry">Retry</button>
+          </div>
+
+          <div v-else-if="loadingDebounced" class="pane-state">
+            <div i-ri:download-cloud-2-line animate-pulse text-2xl text-rs />
+            <p class="pane-state-title">Downloading the tsrs compiler</p>
             <p class="pane-state-note">
-              The WebAssembly build is fetched once, then cached. You can start
-              writing already.
+              The WebAssembly build is loaded from the CDN and cached. You can
+              start writing already.
             </p>
           </div>
 
           <div v-else-if="compiling && !hasOutput" class="pane-state">
-            <div i-ri:loader-4-line animate-spin text-2xl text-go />
+            <div i-ri:loader-4-line animate-spin text-2xl text-rs />
             <p class="pane-state-title">Compiling</p>
           </div>
 
           <div v-else-if="!hasOutput" class="pane-state">
-            <p class="pane-state-title">Nothing emitted</p>
+            <p class="pane-state-title">No output</p>
             <p class="pane-state-note">
-              tsgo produced no files or diagnostics for this command.
+              tsrs produced no files or diagnostics. With --noEmit, this means
+              the check completed successfully.
             </p>
           </div>
 
@@ -316,6 +302,10 @@ function updateCode(name: string, code: string) {
 
 .pane-state-note {
   --at-apply: 'm-0 max-w-70 text-xs text-ink-3 leading-relaxed';
+}
+
+.retry {
+  --at-apply: 'rounded-md border border-line px-3 py-1.5 text-xs text-ink hover:bg-fill';
 }
 
 .copy {

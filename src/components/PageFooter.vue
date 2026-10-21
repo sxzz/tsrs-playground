@@ -16,11 +16,11 @@
     <span class="footer-sep">·</span>
     <a
       class="footer-link"
-      href="https://www.npmjs.com/package/tsgo-wasm"
+      href="https://npmx.dev/package/@tsrs/wasm"
       target="_blank"
       rel="noopener"
     >
-      tsgo-wasm
+      @tsrs/wasm
     </a>
   </footer>
 </template>

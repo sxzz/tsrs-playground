@@ -1,18 +1,18 @@
 {
-  "name": "typescript-go-playground",
+  "name": "tsrs-playground",
   "type": "module",
   "private": true,
-  "description": "TypeScript Go Playground",
+  "description": "tsrs Playground",
   "author": "Kevin Deng <sxzz@sxzz.moe>",
   "license": "MIT",
   "funding": "https://github.com/sponsors/sxzz",
-  "homepage": "https://github.com/sxzz/typescript-go-playground#readme",
+  "homepage": "https://github.com/sxzz/tsrs-playground#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sxzz/typescript-go-playground.git"
+    "url": "git+https://github.com/sxzz/tsrs-playground.git"
   },
   "bugs": {
-    "url": "https://github.com/sxzz/typescript-go-playground/issues"
+    "url": "https://github.com/sxzz/tsrs-playground/issues"
   },
   "devEngines": {
     "packageManager": {
@@ -31,19 +31,16 @@
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
     "@vueuse/core": "^14.4.0",
-    "@wasmer/wasmfs": "^0.12.0",
     "ansi-regex": "^6.3.0",
     "args-tokenizer": "^0.3.0",
     "birpc": "^4.2.0",
     "fflate": "^0.8.3",
-    "modern-tar": "^0.8.4",
     "monaco-editor": "^0.56.0",
     "shiki": "^4.4.3",
     "vue": "^3.5.42"
   },
   "devDependencies": {
     "@iconify-json/catppuccin": "^1.2.17",
-    "@iconify-json/logos": "^1.2.13",
     "@iconify-json/ri": "^1.2.10",
     "@sxzz/eslint-config": "^8.6.0",
     "@sxzz/prettier-config": "^2.3.2",
@@ -55,7 +52,7 @@
     "prettier": "^3.9.6",
     "typescript": "~6.0.3",
     "unocss": "^66.9.2",
-    "vite": "8.2.2",
+    "vite": "^8.2.2",
     "vue-tsc": "^3.3.11"
   },
   "prettier": "@sxzz/prettier-config"
